@@ -32,8 +32,7 @@ class WorkBreakdownMixin(object):
             raise ValueError('Duplicate task id: %s' % id)
         if parent not in self.tasks:
             raise ValueError('Parent task id (%s) does not exist' % id)
-        if name is None: name = id
-        self.tasks[id] = Task(id, name)
+        self.tasks[id] = Task(id, name if name is not None else id)
         self.tasks[parent].subtask_ids.add(id)
 
     def getSubtaskIds(self, task_id):

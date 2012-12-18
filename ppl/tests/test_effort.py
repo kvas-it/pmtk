@@ -13,7 +13,7 @@ from ppl.project import Project
 class EffortTest(unittest.TestCase):
 
     def test_simple_task(self):
-        p = Project()
+        p = Project('p')
         p.addTask('a')
         p.addTask('b')
         p.addEstimate('a', 5)

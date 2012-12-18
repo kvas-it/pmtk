@@ -10,6 +10,9 @@ from .effort import EffortEstimatesMixin
 
 class Project(WorkBreakdownMixin, EffortEstimatesMixin):
 
-    def __init__(self):
+    def __init__(self, id, name=None):
         super(Project, self).__init__()
+        self.id = id
+        self.name = name if name is not None else id
+
 
