@@ -1,12 +1,19 @@
 # $Id$
 # Makefile for ppl
 
-all: build
+.PHONY: all build test clean
 
 build:
-	virtualenv --no-site-packages .
+	virtualenv .
 	bin/python setup.py develop
 
 clean:
-	rm -Rf bin build include lib .Python ppl.egg-info
+	rm -Rf bin man build include lib .Python ppl.egg-info
+
+test: bin/nosetests
+	bin/nosetests -s ppl
+
+bin/nosetests: bin/python
+	bin/pip install nose
+	touch bin/nosetests
 

@@ -5,7 +5,6 @@ Tests for the effort estimates
 """
 
 import unittest
-import setup
 
 from ppl.project import Project
 
