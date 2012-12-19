@@ -34,67 +34,74 @@ Typical project plan expressed in PPL::
 
     -- Comments start with double dash and go until end of line.
     -- Project id and title:
-    project 2233 "Development of a PPL compiler"
+    Project 2233 "Development of a PPL compiler"
 
     -- A task with subtasks:
-    task DOC "Documentation"
+    Task DOC "Documentation"
         INFR "Infrastructure and scripts for rst -> html compilation"
-        -- Implicitly assumes 'task' as the command because we're inside
+        -- Implicitly assumes 'Task' as the command because we're inside
         -- another task. Also because of indent the task created by this
         -- line will be a subtask of DOC. So the line is equivalent to:
-        -- task DOC.INFR ....
+        -- Task DOC.INFR ....
         PPL  "PPL general description"
         COMP "Compiler user manual" (requires DEV.COMP) -- embedded dependency
+        PARS "Parser internal documentation"
 
-    tasks:
-    -- Lines without explicit type will be treated as tasks until the mode
-    -- is switched by a similar command
-    DEV "Development"
-        SETUP "Setting up the product"
-            VCS "Version control" (estimate: 1h)
-            MK  "Makefile" (estimate: 30m) -- estimate
-            VE  "Virtual environment setup (Just add the section to the
-                 makefile)" (estimate: 10m)
-            -- Text inside quotes can span multiple lines. This is treated as
-            -- if it was all on one line and the lines are joined stripping
-            -- extra spaces.
-            TST "Unit testing" (estimate: 30m, requires MK) 
-            -- Estimate and dependency. Not fully qualified names can be used
-            -- as long as they can be unambiguously resolved. Colons after
-            -- 'estimate' and 'requires' are optional. Canonically there is a
-            -- colon after 'estimate' and no colon after 'requires' because
-            -- this is easier to read.
+    Tasks
+        -- Everything until the end of indent will be a 'Task'
+        DEV "Development"
+            SETUP "Setting up the product"
 
-        LIB   "Library" 
-            DATA "Data model" (required by PARS) -- dependency from other side
-            PARS "Parser"
-            PROC "Processors"
-                LVL "Levelling"
+            LIB   "Library" 
+                -- Dependency from other side:
+                DATA "Data model" (required by PARS) 
+                PARS "Parser" (-> DOC.PARS, ->)
+                -- '->' is shorthand for 'required by'. Just '->' means
+                -- required by the next task.
+                PROC "Processors"
+                    LVL "Levelling"
 
-        COMP  "Compiler" (estimate: 4d)
-        PDF   "PDF generator" (estimate: 4d 4h)
+            COMP  "Compiler" (estimate: 4d)
+            PDF   "PDF generator" (estimate: 4d 4h)
 
-    estimates:
-    -- Now default becomes estimates
-    DOC
-        INFR: 30m
-        PPL: 8h
-        COMP: 4h 30m
-    DEV
-        DATA, PARS, PROC: 2d -- estimating multiple tasks at once
+    Tasks in DEV.SETUP
+        -- Explicit context to avoid exessive indentation for deeply nested
+        -- items
+        VCS "Version control" (estimate: 1h)
+        MK  "Makefile" (estimate: 30m) -- estimate
+        VE  "Virtual environment setup (Just add the section to the
+             makefile)" (estimate: 10m)
+        -- Text inside quotes can span multiple lines. This is treated as
+        -- if it was all on one line and the lines are joined stripping
+        -- extra spaces.
+        TST "Unit testing" (estimate: 30m, requires MK) 
+        -- Estimate and dependency. Not fully qualified names can be used
+        -- as long as they can be unambiguously resolved. Colons after
+        -- 'estimate' and 'requires' are optional. Canonically there is a
+        -- colon after 'estimate' and no colon after 'requires' because
+        -- this is easier to read.
 
-    dependencies:
-    -- And now dependencies
-    DOC <- SETUP.MK
-        INFR -> PPL, COMP -- multiple dependants
-    DEV
-        SETUP -> LIB, COMP, PDF
-            VCS -> MK -> TST -- such syntax might be useful for long chains
-        COMP, PDF <- LIB
-        LIB
-            PROC requires DATA, PARS -- 'requires' is an alias for '<-'
+    Estimates
+        DOC
+            INFR: 30m
+            PPL: 8h
+            COMP: 4h 30m
+        DEV
+            DATA, PARS, PROC: 2d -- estimating multiple tasks at once
 
-    dependency INFR <- VE
+    Dependencies
+        -- And now dependencies (colon is not required but canonical since it's
+        -- good for readability).
+        DOC <- SETUP.MK
+            INFR -> PPL, COMP -- multiple dependants
+        DEV
+            SETUP -> LIB, COMP, PDF
+                VCS -> MK -> TST -- such syntax might be useful for long chains
+            COMP, PDF <- LIB
+            LIB
+                PROC requires DATA, PARS -- 'requires' is an alias for '<-'
+
+    Dependency INFR <- VE
     -- Not qualified ids are ok as long as there's no ambiguity. If ambiguity
     -- is possible but can be resolved, a warning can be generated. Ambiguity
     -- can be eliminated by adding more parents or by prefixing the id with
