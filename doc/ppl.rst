@@ -90,8 +90,6 @@ Typical project plan expressed in PPL::
             DATA, PARS, PROC: 2d -- estimating multiple tasks at once
 
     Dependencies
-        -- And now dependencies (colon is not required but canonical since it's
-        -- good for readability).
         DOC <- SETUP.MK
             INFR -> PPL, COMP -- multiple dependants
         DEV
