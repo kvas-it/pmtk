@@ -1,6 +1,4 @@
 """
-$Id$
-
 Project is the container for all other parts of the model
 """
 

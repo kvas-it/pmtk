@@ -1,6 +1,4 @@
 """
-$Id$
-
 Tests for the effort estimates
 """
 

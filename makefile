@@ -1,4 +1,3 @@
-# $Id$
 # Makefile for ppl
 
 .PHONY: all build test clean

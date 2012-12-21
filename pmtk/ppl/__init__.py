@@ -1,5 +1,5 @@
 """
-$Id$
+pmtk.ppl package
 """
 
 import pkg_resources

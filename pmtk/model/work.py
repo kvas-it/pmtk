@@ -1,6 +1,4 @@
 """
-$Id$
-
 Classes related to work breakdown
 """
 
