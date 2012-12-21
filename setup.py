@@ -17,8 +17,8 @@ setup(name='ppl',
       include_package_data=True,
       zip_safe=False,
       install_requires=['setuptools'],
-      keywords='Project Plan Language',
-      url='https://svn.cdmis.net/cdmis.deploy',
-      namespace_packages=['ppl'],
+      keywords='Project Management Toolkit',
+      url='https://github.com/kvas-it/pmtk',
+      namespace_packages=['pmtk'],
       )
 
