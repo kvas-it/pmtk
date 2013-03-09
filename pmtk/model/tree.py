@@ -91,65 +91,6 @@ class Node:
         """Return the length of self.abs_path -- level in the tree"""
         return len(self.abs_path)
 
-    def relative_paths_generator(self):
-        """Yield all relative paths of this node starting from shortest"""
-        rel_path = None
-        for part in reversed(self.abs_path[1:]):
-            if rel_path:
-                rel_path = part + '.' + rel_path
-            else:
-                rel_path = part
-            yield rel_path
-
-    def _indexSubnode(self, node, rel_path=None, rel_path_gen=None,
-            recurse=True):
-        """Index subnode with its shortest unique relative path
-
-        This is sometimes called recursively with the paths generator partially
-        consumed. The idea is that the shortest unique relative path for a node
-        inside the parent can't be shorter than the one inside a child.
-        """
-        if self.parent is None: recurse = False # nowhere to recurse
-
-        if rel_path_gen is None: rel_path_gen = node.relative_paths_generator()
-        if rel_path is None: rel_path = next(rel_path_gen)
-
-        if rel_path in self.subnodes_index:
-            other = self.subnodes_index[rel_path]
-            if isinstance(other, list):
-                # there are several nodes with this subpath -- they must have
-                # the same level, let's take first one
-                other = other[0]
-                if node.getLevel() < other.getLevel():
-                    # we take this slot in the index
-                    self.subnodes_index[rel_path] = node
-                    if recurse:
-                        self.parent._indexSubnode(node, rel_path, rel_path_gen)
-                else:
-                    # keep going
-                    self._indexSubnode(node, None, rel_path_gen)
-            else:
-                # there's one node with this subpath, let's compare levels
-                if node.getLevel() < other.getLevel(): # closer to the top:
-                    # we replace other
-                    self.subnodes_index[rel_path] = node
-                    if recurse:
-                        self.parent._indexSubnode(node, rel_path, rel_path_gen)
-                    self._indexSubnode(other, recurse=False)
-                elif node.getLevel() == other.getLevel(): # draw :(
-                    # put both in the index slot
-                    self.subnodes_index[rel_path] = [other, node]
-                    # and calculate unique paths for both
-                    self._indexSubnode(other, recurse=False)
-                    self._indexSubnode(node, None, rel_path_gen)
-                else: # other is closer to the top:
-                    # keep going
-                    self._indexSubnode(node, None, rel_path_gen)
-        else:
-            self.subnodes_index[rel_path] = node
-            if recurse:
-                self.parent._indexSubnode(node, rel_path, rel_path_gen)
-
     def listChildren(self):
         """Return a list of all children of this node"""
         return self.children.values()
@@ -176,7 +117,6 @@ class Node:
         self.children[child.id] = child
         child.parent = self
         child.abs_path = self.abs_path + (child.id,)
-        self._indexSubnode(child)
         child._readdChildren()
 
         # now the node is indexed with its shortest unique relative path, so
@@ -196,42 +136,48 @@ class Node:
 
     def _matchesRelPath(self, path):
         """Check if our path ends with path"""
-        path = tuple(path.split('.'))
+        if isinstance(path, basestring): path = tuple(path.split('.'))
         if len(path) > len(self.abs_path):
             return False
         else:
             return self.abs_path[-len(path):] == path
 
-    def _navigateFuzzy(self, path):
-        """Navigate by looking up unique subpaths in the index"""
-        if path in self.subnodes_index:
-            return self.subnodes_index[path]
-        else:
-            if '.' in path:
-                # try subpath
-                _, subpath = path.split('.', 1)
-                sr = self._navigateFuzzy(subpath)
-                if isinstance(sr, Node) and sr._matchesRelPath(path):
-                    return sr # not list or None and matches full path
-                else:
-                    return None
+    def _depthFirstIterator(self, skip_node=None):
+        """Depth first tree iterator"""
+        for child in self.children.values():
+            if child == skip_node: continue
+            yield child
+            for i in child._depthFirstIterator(skip_node):
+                yield i
+
+    def _navigateFuzzy(self, path, skip_node=None):
+        """Navigate by relative paths (see rules in module docstring)"""
+        found = []
+        for node in self._depthFirstIterator(skip_node):
+            if node._matchesRelPath(path):
+                found.append(node)
+        if len(found) == 1:
+            return found[0]
+        elif len(found) > 1:
+            found = sorted((n.getLevel(), n) for n in found)
+            if found[0][0] < found[1][0]:
+                return found[0][1]
             else:
-                return None
+                found = [p[1] for p in found if p[0] == found[0][0]]
+                raise AmbiguousPath(path, found)
+        else:
+            # nothing found here
+            if self.parent is not None:
+                return self.parent._navigateFuzzy(path, skip_node=self)
+            else:
+                raise NonexistentPath(path)
 
     def navigate(self, path, fuzzy=False):
         """Navigate to path starting from current node"""
         if path.startswith('.'):
             return self.getRoot()._navigateDirect(path[1:])
         else:
-            t = self._navigateFuzzy(path)
-            if isinstance(t, list):
-                raise AmbiguousPath(path, t)
-            elif t is not None:
-                return t
-            elif self.parent is not None:
-                return self.parent.navigate(path)
-            else:
-                raise NonexistentPath(path)
+            return self._navigateFuzzy(path)
 
     def getRoot(self):
         """Return the root of the hierarchy"""

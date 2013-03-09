@@ -24,10 +24,6 @@ class TestNode(unittest.TestCase):
         unz = Node('unz', baz)
         self.assertEqual(root.children, {'foo': foo, 'bar': bar})
         self.assertEqual(foo.children, {'baz': baz})
-        self.assertEqual(root.subnodes_index, {'foo': foo, 'bar': bar,
-            'baz': baz, 'unz': unz})
-        self.assertEqual(foo.subnodes_index, {'baz': baz, 'unz': unz})
-        self.assertEqual(bar.subnodes_index, {})
 
     def _build_tree(self):
         """Build a reasonably complicated tree"""
@@ -54,11 +50,9 @@ class TestNode(unittest.TestCase):
         self.assertEqual(T.bcf.navigate('d'), T.bcd)
         self.assertEqual(T.ace.navigate('d'), T.aced)
         self.assertEqual(T.bcf.navigate('c.d'), T.bcd)
-        self.assertEqual(T.bcf.navigate('e.d'), T.aced)
-        self.assertEqual(T.bcf.navigate('e'), T.ace)
         self.assertEqual(T.bcf.navigate('a.c'), T.ac)
         self.assertRaises(NonexistentPath, T.bcf.navigate, 'z')
-        self.assertRaises(AmbiguousPath, T.bcf.navigate, 'ed')
+        self.assertRaises(AmbiguousPath, T.bcf.navigate, 'e.d')
 
     def test_directNavigation(self):
         """Test navigation by absolute path"""
