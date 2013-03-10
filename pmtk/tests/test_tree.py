@@ -50,9 +50,19 @@ class TestNode(unittest.TestCase):
         self.assertEqual(T.bcf.navigate('d'), T.bcd)
         self.assertEqual(T.ace.navigate('d'), T.aced)
         self.assertEqual(T.bcf.navigate('c.d'), T.bcd)
+        self.assertEqual(T.a.navigate('c.d'), T.acd)
+        self.assertEqual(T.bcf.navigate('c.e'), T.ace)
         self.assertEqual(T.bcf.navigate('a.c'), T.ac)
+        self.assertEqual(T.ac.navigate('e.d'), T.aced)
+        self.assertEqual(T.ab.navigate('e.d'), T.abed)
+        self.assertEqual(T.a.navigate('d'), T.acd)
+        self.assertEqual(T.a.navigate('c.d'), T.acd)
+        self.assertEqual(T.aca.navigate('d'), T.acd)
+        self.assertEqual(T.ace.navigate('d'), T.aced)
+        self.assertEqual(T.root.navigate('b'), T.b)
         self.assertRaises(NonexistentPath, T.bcf.navigate, 'z')
         self.assertRaises(AmbiguousPath, T.bcf.navigate, 'e.d')
+        self.assertRaises(AmbiguousPath, T.root.navigate, 'c.d')
 
     def test_directNavigation(self):
         """Test navigation by absolute path"""
