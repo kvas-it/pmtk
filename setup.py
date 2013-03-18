@@ -19,6 +19,4 @@ setup(name='ppl',
       install_requires=['setuptools'],
       keywords='Project Management Toolkit',
       url='https://github.com/kvas-it/pmtk',
-      namespace_packages=['pmtk'],
-      )
-
+      namespace_packages=['pmtk'])

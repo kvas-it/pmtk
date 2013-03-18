@@ -20,7 +20,7 @@ possible. For many things there is more than one way to do it, but there's
 always a canonical way to do things which is used by the toolchain when writing
 PPL.
 
-Indentation is used for denoting blocks. Block starts from increased
+Indentation is used for denoting blocks. A block starts from increased
 indentation and goes until the indentation goes back to one of higher levels.
 Decreasing indentation in such a way that it doesn't correspond to any of the
 higher levels is a syntax error. Both spaces and tabs can be used for

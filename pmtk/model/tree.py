@@ -25,7 +25,8 @@ ids plus the node id (scanned from the root to the node) separated by dots.
 Longest path is also called the absolute path. The id of the root node is taken
 to be empty for the purposes of path construction so absolute path starts with
 a dot, followed by the id of the closest to the root ancestor and so forth. Any
-other path is a relative path.
+other path is a relative path. Absolute part of the root is "." and it doesn't
+have any relative paths.
 
 Navigation in the tree
 ----------------------
@@ -49,13 +50,13 @@ nodes close to the root being shadowed by their namesakes deep in the tree.
 """
 
 class NavigationError(LookupError):
-    """Navigation failed"""
+    """Navigation failed."""
 
 class NonexistentPath(NavigationError):
-    """Path doesn't match any nodes"""
+    """Path doesn't match any nodes."""
 
 class AmbiguousPath(NavigationError):
-    """Path matches more than one node"""
+    """Path matches more than one node."""
 
     def __init__(self, path, nodes=None):
         self.path = path
@@ -69,7 +70,7 @@ class AmbiguousPath(NavigationError):
             return self.path
 
 
-class Node:
+class Node(object):
     """Base class for building hierarchies"""
 
     def __init__(self, id='', parent=None):
@@ -82,21 +83,32 @@ class Node:
             parent.addChild(self)
 
     def __str__(self):
-        return '.'.join(self.abs_path)
+        return self.getAbsolutePath()
 
     def __repr__(self):
-        return '<Node at %s>' % '.'.join(self.abs_path)
+        return '<Node at %s>' % self.getAbsolutePath()
+
+    def getAbsolutePath(self):
+        """Return absolute path as a string."""
+        if self.parent is None:
+            return '.' # root is a special case here
+        else:
+            return '.'.join(self.abs_path)
 
     def getLevel(self):
-        """Return the length of self.abs_path -- level in the tree"""
+        """Return the length of self.abs_path -- level in the tree."""
         return len(self.abs_path)
 
     def listChildren(self):
-        """Return a list of all children of this node"""
+        """Return a list of all children of this node."""
         return self.children.values()
 
+    def yieldDescendants(self):
+        """Yield all descendants of this node depth first."""
+        return self._depthFirstIterator()
+
     def _readdChildren(self):
-        """Readd all the children to this node
+        """Readd all the children to this node.
 
         This is used to update all the indexes when a tree is added as a branch
         under some other node.
@@ -119,18 +131,16 @@ class Node:
         child.abs_path = self.abs_path + (child.id,)
         child._readdChildren()
 
-        # now the node is indexed with its shortest unique relative path, so
-        # we can navigate by trying progressively shorter subpaths of the path
-        # that we're give and the first one that matches is the solution.
-
     def _navigateDirect(self, path):
         """Navigate without any smart lookup"""
         try:
             if '.' in path:
                 first_id, rest = path.split('.', 1)
                 return self.children[first_id]._navigateDirect(rest)
-            else:
+            elif path:
                 return self.children[path]
+            else:
+                return self
         except (KeyError, NonexistentPath):
             raise NonexistentPath(path)
 
@@ -142,18 +152,18 @@ class Node:
         else:
             return self.abs_path[-len(path):] == path
 
-    def _depthFirstIterator(self, skip_node=None):
+    def _depthFirstIterator(self, skip_descent_for=None):
         """Depth first tree iterator"""
         for child in self.children.values():
-            if child == skip_node: continue
             yield child
-            for i in child._depthFirstIterator(skip_node):
+            if child == skip_descent_for: continue
+            for i in child._depthFirstIterator(skip_descent_for):
                 yield i
 
-    def _navigateFuzzy(self, path, skip_node=None):
+    def _navigateFuzzy(self, path, skip_descent_for=None):
         """Navigate by relative paths (see rules in module docstring)"""
         found = []
-        for node in self._depthFirstIterator(skip_node):
+        for node in self._depthFirstIterator(skip_descent_for):
             if node._matchesRelPath(path):
                 found.append(node)
         if len(found) == 1:
@@ -168,7 +178,7 @@ class Node:
         else:
             # nothing found here
             if self.parent is not None:
-                return self.parent._navigateFuzzy(path, skip_node=self)
+                return self.parent._navigateFuzzy(path, skip_descent_for=self)
             else:
                 raise NonexistentPath(path)
 

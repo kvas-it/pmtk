@@ -1,44 +1,78 @@
 """
-Classes related to work breakdown
+Classes related to work breakdown.
 """
 
-class Task:
-    """Task is a basic element of work"""
+from .tree import Node
 
-    def __init__(self, id, title):
-        self.id = id
+
+class Task(Node):
+    """Task is a basic element of work."""
+
+    def __init__(self, id='', title='', parent=None):
+        Node.__init__(self, id, parent)
         self.title = title
-        self.subtask_ids = set()
 
-
-ROOT_TASK_ID = 'MAIN'
-ROOT_TASK_NAME = 'Main'
 
 class WorkBreakdownMixin(object):
-    """Container for the work breakdown (to be mixed into Project)"""
+    """Container for the work breakdown (to be mixed into Project)."""
 
     def __init__(self):
         super(WorkBreakdownMixin, self).__init__()
         # root of the hierarchy of tasks
-        self.root_task = Task(ROOT_TASK_ID, ROOT_TASK_NAME)
-        # id -> task mapping
-        self.tasks = {ROOT_TASK_ID: self.root_task}
+        self.root_task = Task()
 
-    def addTask(self, id, name=None, parent=ROOT_TASK_ID):
-        """Add a new task to the work breakdown"""
-        if id in self.tasks:
-            raise ValueError('Duplicate task id: %s' % id)
-        if parent not in self.tasks:
-            raise ValueError('Parent task id (%s) does not exist' % id)
-        self.tasks[id] = Task(id, name if name is not None else id)
-        self.tasks[parent].subtask_ids.add(id)
+    def getTask(self, path):
+        """Look up task by absolute and relative path and return it."""
+        return self.root_task.navigate(path)
 
-    def getSubtaskIds(self, task_id):
-        return self.tasks[task_id].subtask_ids
-
-    def getBreakdownRoot(self):
+    def getRootTask(self):
+        """Return root task of the work breakdown structure."""
         return self.root_task
 
-    def getTaskById(self, id):
-        return self.tasks[id]
 
+class ContextStackEmpty(Exception):
+    """Raised by WorkBreakdownBuilder.popContext if context stack is empty."""
+
+
+class WorkBreakdownBuilder(object):
+    """Helper class for building work breakdown structure of the project.
+
+    WBB keeps current context and a stack of previous contexts. It adds tasks
+    under the current context.
+    """
+
+    def __init__(self, project):
+        self.project = project
+        self.context = project.getRootTask()
+        self.context_stack = []  # previous contexts
+
+    def setContext(self, new_context):
+        """Set context to new_context and push current one onto the stack."""
+        self.context_stack.append(self.context)
+        self.context = new_context
+
+    def navigateContext(self, path):
+        """Navigate to a task by path and make it new context."""
+        self.setContext(self.context.navigate(path))
+
+    def popContext(self):
+        """Replace current context with the last one from the stack."""
+        if self.context_stack:
+            self.context = self.context_stack.pop()
+        else:
+            raise ContextStackEmpty()
+
+    def addTask(self, path, title):
+        """Add a new task, and return it.
+
+        Path can be just an id (then the task is created under current context)
+        or a path (then prefix is navigated from the current context and then
+        the last part of the path is used as the id of the new task).
+        """
+        if '.' in path:
+            parent_path, new_id = path.rsplit('.', 1)
+            parent = self.context.navigate(parent_path)
+        else:  # just id
+            parent = self.context
+            new_id = path
+        return Task(new_id, title, parent)

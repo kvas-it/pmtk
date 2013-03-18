@@ -13,4 +13,3 @@ class Project(WorkBreakdownMixin, EffortEstimatesMixin):
         self.id = id
         self.name = name if name is not None else id
 
-
