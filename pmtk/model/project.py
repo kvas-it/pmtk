@@ -3,13 +3,19 @@ Project is the container for all other parts of the model
 """
 
 from .work import WorkBreakdownMixin
-from .effort import EffortEstimatesMixin
 
 
-class Project(WorkBreakdownMixin, EffortEstimatesMixin):
+class Project(WorkBreakdownMixin):
 
-    def __init__(self, id, name=None):
+    def __init__(self, id, title=None):
         super(Project, self).__init__()
         self.id = id
-        self.name = name if name is not None else id
+        self.title = title
 
+    def _getTitle(self):
+        return self._title if self._title is not None else self.id
+
+    def _setTitle(self, title):
+        self._title = title
+
+    title = property(_getTitle, _setTitle)
