@@ -27,11 +27,10 @@ class TestReader(unittest.TestCase):
 
     def test_empty_project(self):
         """Test reading an empty project."""
-        wb = """
+        prj = self._read_string("""
 -- This is a comment and it will be ignored
 Project 3322 "Empty project test"
-"""
-        prj = self._read_string(wb)
+""")
         self.failUnlessEqual(prj.id, '3322')
         self.failUnlessEqual(prj.title, 'Empty project test')
 
@@ -45,7 +44,7 @@ Project 3322 "Empty project test"
     def test_premature_commands(self):
         """Test handling of commands before Project"""
         try:
-            self._read_string('Other Command')
+            self._read_string('Task a')
             raise AssertionError('UnexpectedCommand exception expected')
         except reader.UnexpectedCommand:
             pass
@@ -58,12 +57,38 @@ Project 3322 "Empty project test"
         except reader.SyntaxError:
             pass
 
-#     def test_work_breakdown(self):
-#         """Test reading of a simple work breakdown structure"""
-#         wb = """
-# 
+    def test_project_no_id(self):
+        """Try to create a project with no id"""
+        try:
+            self._read_string('Project  -- without the id')
+            raise AssertionError('SyntaxError expected')
+        except reader.SyntaxError:
+            pass
+
+    def test_one_task(self):
+        """Test one task project"""
+        prj = self._read_string("""
+Project 3322
+Task a b
+""")
+        self.assertEqual(len(prj.getRootTask().listChildren()), 1)
+        a = prj.getTask('.a')
+        self.assertEqual(a.id, 'a')
+        self.assertEqual(a.title, 'b')
 
 
+    def test_task_and_subtask(self):
+        """Test a project with a task and subtask"""
+        prj = self._read_string("""
+Project 3322
+Task a
+    Task b
+""")
+        a = prj.getTask('.a')
+        self.assertEqual(len(a.listChildren()), 1) 
+        b = a.navigate('b')
+        self.assertEqual(b.id, 'b')
+        self.assertEqual(b.title, 'b')
 
 
 if __name__ == '__main__':

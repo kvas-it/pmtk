@@ -3,8 +3,9 @@ PPL reader
 """
 
 import shlex
+import itertools
 
-from pmtk.model import project
+from pmtk.model import project, work
 
 
 class InvalidReaderInput(ValueError):
@@ -65,16 +66,19 @@ class Reader:
             line = line[1:]
             indent += 1
         tokens = shlex.split(line)
+        tokens = list(itertools.takewhile(lambda t: not t.startswith('--'),
+            tokens))  # drop the comment at the end
         return (indent,) + tuple(tokens)
 
     def readFromStream(self, stream):
         """Read lines from the stream"""
         self.stream = stream
         self._reset()
-        first_line = self._getNextLine()
-        if first_line is None:
+        line = self._getNextLine()
+        if line is None:
             raise PrematureEOF("Input file contains no commands")
-        t = self._splitLine(first_line)
+
+        t = self._splitLine(line)
         if t[0] != 0:
             raise SyntaxError("Unexpected indent")
         if t[1] != 'Project':
@@ -84,4 +88,17 @@ class Reader:
         self.project = project.Project(t[2])  # id
         if len(t) > 3:
             self.project.title = t[3]  # title
+
+        while True:
+            line = self._getNextLine()
+            if line is None:
+                break
+            t = self._splitLine(line)
+            if t[1] == 'Task':
+                if len(t) == 3:
+                    id, title = t[2], None
+                else:
+                    id, title = t[2:4]
+                tsk = work.Task(id, title, self.project.getRootTask())
+
         return self.project

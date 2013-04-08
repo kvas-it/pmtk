@@ -183,7 +183,7 @@ class Node(object):
                 raise NonexistentPath(path)
 
     def navigate(self, path, fuzzy=False):
-        """Navigate to path starting from current node"""
+        """Navigate to path starting from current node and return found node"""
         if path.startswith('.'):
             return self.getRoot()._navigateDirect(path[1:])
         else:

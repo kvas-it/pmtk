@@ -2,14 +2,15 @@
 Classes related to work breakdown.
 """
 
-from .tree import Node
+from . import tree
+from .. import util
 
 
-class Task(Node):
+class Task(tree.Node, util.TitleMixin):
     """Task is a basic element of work."""
 
-    def __init__(self, id='', title='', parent=None):
-        Node.__init__(self, id, parent)
+    def __init__(self, id='', title=None, parent=None):
+        tree.Node.__init__(self, id, parent)
         self.title = title
 
 
