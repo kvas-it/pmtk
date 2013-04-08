@@ -9,10 +9,6 @@ build:
 clean:
 	rm -Rf bin man build include lib .Python ppl.egg-info
 
-test: bin/nosetests
-	bin/nosetests -s pmtk
-
-bin/nosetests: bin/python
-	bin/pip install nose
-	touch bin/nosetests
+test:
+	nosetests -s pmtk
 
