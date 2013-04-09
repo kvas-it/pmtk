@@ -122,6 +122,19 @@ Task d
         d = prj.getTask('.d')
         self.assertEqual(len(d.listChildren()), 2)
 
+    def test_invalid_unindent(self):
+        """Test invalid unindent handling"""
+        try:
+            self._read_string("""
+Project 123
+Task a
+    Task b
+  Task c
+""")
+            raise AssertionError('SyntaxError expected')
+        except reader.SyntaxError:
+            pass
+
 
 if __name__ == '__main__':
     unittest.main()
