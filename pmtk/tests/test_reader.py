@@ -195,6 +195,21 @@ Task c
         self.assertEqual(prj.getTask('b').description, 'Description b')
         self.assertEqual(prj.getTask('c').description, 'Description c')
 
+    def test_properties(self):
+        """Test custom properties defined with $<prop_id> <value>."""
+        prj = self._read_string("""
+Project 3372
+    $prop1 value1
+Task a
+    $prop2 value2
+    $prop3 "long property value"
+""")
+        self.assertEqual(prj.getProperty('prop1'), 'value1')
+        a = prj.getTask('.a')
+        self.assertEqual(a.getProperty('prop1'), None)  # not defined on a
+        self.assertEqual(a.getProperty('prop2'), 'value2')
+        self.assertEqual(a.getProperty('prop3'), 'long property value')
+
 
 if __name__ == '__main__':
     unittest.main()

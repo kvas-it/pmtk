@@ -117,6 +117,9 @@ class Reader:
 
         if cmd_parts[0] in ('Project', 'Task'):
             cmd = cmd_parts.pop(0)
+        elif cmd_parts[0].startswith('$') and ' ' not in cmd_parts[0]:
+            cmd = 'Property'
+            cmd_parts[0] = cmd_parts[0][1:]
         else:
             if self.context is not None:
                 if len(cmd_parts) == 1 and line.strip()[0] in ("'", '"'):
@@ -131,7 +134,7 @@ class Reader:
         if self.project is None and cmd != 'Project':
             raise UnexpectedCommand("File must start with a Project command")
 
-        return indent, cmd, cmd_parts, []
+        return indent, cmd, cmd_parts
 
     def _getNextLine(self):
         for line in self.stream:
@@ -152,17 +155,17 @@ class Reader:
         if line is None:
             return False
 
-        indent, cmd, args, extras = self._breakCommand(line)
+        indent, cmd, args = self._breakCommand(line)
         self._handleIndent(indent)
         handler = getattr(self, '_handle%sCommand' % cmd)
-        obj = handler(args, extras)
+        obj = handler(args)
 
         if obj is not None:
             self._setContext(obj, indent)
 
         return True
 
-    def _handleProjectCommand(self, args, extras):
+    def _handleProjectCommand(self, args):
         if len(args) < 1:
             raise SyntaxError("Project must have an id")
         self.project = project.Project(args[0])  # id
@@ -170,7 +173,7 @@ class Reader:
             self.project.title = args[1]  # title
         return self.project
 
-    def _handleTaskCommand(self, args, extras):
+    def _handleTaskCommand(self, args):
         if len(args) < 1:
             raise SyntaxError("Task must have an id")
         elif len(args) == 1:
@@ -185,13 +188,22 @@ class Reader:
 
         return work.Task(id, title, parent)
 
-    def _handleDescriptionCommand(self, args, extras):
+    def _handleDescriptionCommand(self, args):
+        """Description command: "<description text>"."""
         assert self.context is not None
 
         if self.context.description:
             self.context.description += '\n' + args[0]
         else:
             self.context.description = args[0]
+
+        return None
+
+    def _handlePropertyCommand(self, args):
+        """Property command: $<prop_id> <prop_value>."""
+        assert self.context is not None
+
+        self.context.setProperty(*args)
 
         return None
 
