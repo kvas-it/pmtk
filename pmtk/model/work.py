@@ -9,6 +9,8 @@ from .. import util
 class Task(tree.Node, util.TitleMixin):
     """Task is a basic element of work."""
 
+    command_name = 'Task'  # for reader
+
     def __init__(self, id='', title=None, parent=None):
         tree.Node.__init__(self, id, parent)
         self.title = title

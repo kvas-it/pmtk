@@ -76,19 +76,34 @@ Task a b
         self.assertEqual(a.id, 'a')
         self.assertEqual(a.title, 'b')
 
+    def test_task_no_id(self):
+        """Test task without id -- must fail"""
+        try:
+            self._read_string("""
+Project 3322
+Task
+""")
+            raise AssertionError('SyntaxError expected')
+        except reader.SyntaxError:
+            pass
 
-    def test_task_and_subtask(self):
-        """Test a project with a task and subtask"""
+    def test_task_hierarchy(self):
+        """Test a project with a small task hierarchy"""
         prj = self._read_string("""
 Project 3322
 Task a
     Task b
+      Task c
 """)
         a = prj.getTask('.a')
         self.assertEqual(len(a.listChildren()), 1) 
         b = a.navigate('b')
         self.assertEqual(b.id, 'b')
         self.assertEqual(b.title, 'b')
+        self.assertEqual(len(b.listChildren()), 1) 
+        c = b.navigate('c')
+        self.assertEqual(c.id, 'c')
+        self.assertEqual(c.title, 'c')
 
 
 if __name__ == '__main__':
