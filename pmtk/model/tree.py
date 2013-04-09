@@ -49,11 +49,14 @@ origin, the closest node to the root is returned. This is important to prevent
 nodes close to the root being shadowed by their namesakes deep in the tree.
 """
 
+
 class NavigationError(LookupError):
     """Navigation failed."""
 
+
 class NonexistentPath(NavigationError):
     """Path doesn't match any nodes."""
+
 
 class AmbiguousPath(NavigationError):
     """Path matches more than one node."""
@@ -65,7 +68,7 @@ class AmbiguousPath(NavigationError):
     def __str__(self):
         if self.nodes is not None:
             return '%s matches several nodes: %s' %\
-                    (self.path, ', '.join(str(node) for node in self.nodes))
+                (self.path, ', '.join(str(node) for node in self.nodes))
         else:
             return self.path
 
@@ -76,9 +79,9 @@ class Node(object):
     def __init__(self, id='', parent=None):
         self.id = id
         self.parent = None
-        self.abs_path = ('',) # absolute path as a tuple of ids
-        self.children = {} # direct subnodes (children) by id
-        self.subnodes_index = {} # unique relative paths of subnodes
+        self.abs_path = ('',)  # absolute path as a tuple of ids
+        self.children = {}  # direct subnodes (children) by id
+        self.subnodes_index = {}  # unique relative paths of subnodes
         if parent is not None:
             parent.addChild(self)
 
@@ -91,7 +94,7 @@ class Node(object):
     def getAbsolutePath(self):
         """Return absolute path as a string."""
         if self.parent is None:
-            return '.' # root is a special case here
+            return '.'  # root is a special case here
         else:
             return '.'.join(self.abs_path)
 
@@ -146,7 +149,8 @@ class Node(object):
 
     def _matchesRelPath(self, path):
         """Check if our path ends with path"""
-        if isinstance(path, basestring): path = tuple(path.split('.'))
+        if isinstance(path, basestring):
+            path = tuple(path.split('.'))
         if len(path) > len(self.abs_path):
             return False
         else:
@@ -156,7 +160,8 @@ class Node(object):
         """Depth first tree iterator"""
         for child in self.children.values():
             yield child
-            if child == skip_descent_for: continue
+            if child == skip_descent_for:
+                continue
             for i in child._depthFirstIterator(skip_descent_for):
                 yield i
 

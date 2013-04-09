@@ -1,5 +1,8 @@
 """
-PPL reader
+PPL reader.
+
+Reads PPL files and builds project.Project objects based on the commands in the
+file.
 """
 
 import shlex
@@ -29,7 +32,7 @@ class SyntaxError(InvalidReaderInput):
 
 
 class Reader:
-    """Read and pre-parse .ppl file(s)."""
+    """Makes project.Project objects out of PPL files."""
 
     def __init__(self):
         self.stream = None
@@ -45,23 +48,13 @@ class Reader:
         self.context = None
         self.context_stack = []
 
-    def _getNextLine(self):
-        for line in self.stream:
-            self.line_no += 1
-            if line.isspace():
-                continue
-            if line.strip().startswith('--'):
-                continue
-            return line
-        return None  # EOF
-
     def _splitLine(self, line):
         """Split line into tokens.
 
         Generally the line should be of the form:
         <indent><token> <token> ... [(<subcmd>, <subcmd>, ...)] [--<comment>]
         where:
-          * indent is spaces or tabs which will only be counted,
+          * indent is spaces which will only be counted,
           * tokens are sequences of alphanumeric characters or quoted strings,
           * subcmds are ...
           * comment is anything until the end of the string.
@@ -117,16 +110,20 @@ class Reader:
         else:
             self._popContext()
 
-    def _breakCommand(self, cmd_parts):
+    def _breakCommand(self, line):
         """Break the command into command, arguments and extras."""
+        cmd_parts = self._splitLine(line)
+        indent = cmd_parts.pop(0)
+
         if cmd_parts[0] in ('Project', 'Task'):
             cmd = cmd_parts.pop(0)
         else:
             if self.context is not None:
-                if len(cmd_parts) == 1 and (cmd_parts[0] == '' or
-                        ' ' in cmd_parts[0]):
+                if len(cmd_parts) == 1 and line.strip()[0] in ("'", '"'):
+                    # one quoted string is description
                     cmd = 'Description'
                 else:
+                    # otherwise assume same command as parent (a.k.a. context)
                     cmd = self.context.command_name
             else:
                 raise UnrecognizedCommand('Unknown command: %s' % cmd_parts[0])
@@ -134,7 +131,17 @@ class Reader:
         if self.project is None and cmd != 'Project':
             raise UnexpectedCommand("File must start with a Project command")
 
-        return cmd, cmd_parts, []
+        return indent, cmd, cmd_parts, []
+
+    def _getNextLine(self):
+        for line in self.stream:
+            self.line_no += 1
+            if line.isspace():
+                continue
+            if line.strip().startswith('--'):
+                continue
+            return line
+        return None  # EOF
 
     def _doOneCommand(self):
         """Read one command from the input file and execute it.
@@ -145,12 +152,8 @@ class Reader:
         if line is None:
             return False
 
-        t = self._splitLine(line)
-
-        indent = t.pop(0)
+        indent, cmd, args, extras = self._breakCommand(line)
         self._handleIndent(indent)
-
-        cmd, args, extras = self._breakCommand(t)
         handler = getattr(self, '_handle%sCommand' % cmd)
         obj = handler(args, extras)
 
@@ -193,15 +196,14 @@ class Reader:
         return None
 
     def readFromStream(self, stream):
-        """Read lines from the stream"""
+        """Load project from the stream."""
         self.stream = stream
         self._reset()
 
         if not self._doOneCommand():
             raise PrematureEOF("Input file contains no commands")
 
-        while True:
-            if not self._doOneCommand():
-                break
+        while self._doOneCommand():
+            pass
 
         return self.project
