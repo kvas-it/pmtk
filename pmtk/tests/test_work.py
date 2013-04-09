@@ -28,6 +28,13 @@ class TestWorkBreakdownMixin(unittest.TestCase):
         self.assertIs(wb.getTask('.task.subtask'), subtask)
         self.assertIs(wb.getTask('subtask'), subtask)
 
+    def test_description(self):
+        """Test description field of the tasks"""
+        task = Task('id', 'Title title', None)
+        self.assertEqual(task.description, '')
+        task.description = 'Description of the task'
+        self.assertEqual(task.description, 'Description of the task')
+
 
 class TestWorkBreakdownBuilder(unittest.TestCase):
     """Test the work breakdown structure bulding using WorkBreakdownBuilder."""

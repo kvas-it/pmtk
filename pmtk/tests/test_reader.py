@@ -65,37 +65,41 @@ Project 3322 "Empty project test"
         except reader.SyntaxError:
             pass
 
+    def _read_tasks(self, task_str):
+        """Read tasks description and return the list of tasks under root"""
+        prj = self._read_string("""
+Project 3372
+""" + task_str)
+        return prj.getRootTask().listChildren()
+
+    def _read_task(self, task_str):
+        """Read task(s) and return the first task under root"""
+        return self._read_tasks(task_str)[0]
+
     def test_one_task(self):
         """Test one task project"""
-        prj = self._read_string("""
-Project 3322
-Task a b
-""")
-        self.assertEqual(len(prj.getRootTask().listChildren()), 1)
-        a = prj.getTask('.a')
+        a = self._read_task("Task a b")
+        root_task = a.getRoot()
+        self.assertEqual(len(root_task.listChildren()), 1)
+        a = root_task.navigate('.a')
         self.assertEqual(a.id, 'a')
         self.assertEqual(a.title, 'b')
 
     def test_task_no_id(self):
         """Test task without id -- must fail"""
         try:
-            self._read_string("""
-Project 3322
-Task
-""")
+            self._read_task("Task")
             raise AssertionError('SyntaxError expected')
         except reader.SyntaxError:
             pass
 
     def test_task_hierarchy(self):
         """Test a project with a small task hierarchy"""
-        prj = self._read_string("""
-Project 3322
+        a = self._read_task("""
 Task a
     Task b
       Task c
 """)
-        a = prj.getTask('.a')
         self.assertEqual(len(a.listChildren()), 1) 
         b = a.navigate('b')
         self.assertEqual(b.id, 'b')
@@ -107,8 +111,7 @@ Task a
 
     def test_task_hierarchy2(self):
         """Test task hierarchy with some more branching"""
-        prj = self._read_string("""
-Project 3322
+        tasks = self._read_tasks("""
 Task a
     Task b
     Task c
@@ -116,17 +119,17 @@ Task d
     Task e
     Task f
 """)
-        self.assertEqual(len(prj.getRootTask().listChildren()), 2)
-        a = prj.getTask('.a')
+        self.assertEqual(len(tasks), 2)
+        root_task = tasks[0].getRoot()
+        a = root_task.navigate('.a')
         self.assertEqual(len(a.listChildren()), 2)
-        d = prj.getTask('.d')
+        d = root_task.navigate('.d')
         self.assertEqual(len(d.listChildren()), 2)
 
     def test_invalid_unindent(self):
         """Test invalid unindent handling"""
         try:
-            self._read_string("""
-Project 123
+            self._read_tasks("""
 Task a
     Task b
   Task c
@@ -134,6 +137,16 @@ Task a
             raise AssertionError('SyntaxError expected')
         except reader.SyntaxError:
             pass
+
+    def test_task_description(self):
+        """Test task description loading"""
+        a = self._read_task("""
+Task a
+    "First line of description"
+    'Second line of description'
+""")
+        self.assertEqual(a.description, "First line of description\n"
+                "Second line of description")
 
 
 if __name__ == '__main__':

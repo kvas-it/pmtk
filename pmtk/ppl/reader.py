@@ -123,7 +123,11 @@ class Reader:
             cmd = cmd_parts.pop(0)
         else:
             if self.context is not None:
-                cmd = self.context.command_name
+                if len(cmd_parts) == 1 and (cmd_parts[0] == '' or
+                        ' ' in cmd_parts[0]):
+                    cmd = 'Description'
+                else:
+                    cmd = self.context.command_name
             else:
                 raise UnrecognizedCommand('Unknown command: %s' % cmd_parts[0])
 
@@ -150,7 +154,8 @@ class Reader:
         handler = getattr(self, '_handle%sCommand' % cmd)
         obj = handler(args, extras)
 
-        self._setContext(obj, indent)
+        if obj is not None:
+            self._setContext(obj, indent)
 
         return True
 
@@ -176,6 +181,16 @@ class Reader:
             parent = self.context
 
         return work.Task(id, title, parent)
+
+    def _handleDescriptionCommand(self, args, extras):
+        assert self.context is not None
+
+        if self.context.description:
+            self.context.description += '\n' + args[0]
+        else:
+            self.context.description = args[0]
+
+        return None
 
     def readFromStream(self, stream):
         """Read lines from the stream"""
