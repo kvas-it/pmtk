@@ -105,6 +105,23 @@ Task a
         self.assertEqual(c.id, 'c')
         self.assertEqual(c.title, 'c')
 
+    def test_task_hierarchy2(self):
+        """Test task hierarchy with some more branching"""
+        prj = self._read_string("""
+Project 3322
+Task a
+    Task b
+    Task c
+Task d
+    Task e
+    Task f
+""")
+        self.assertEqual(len(prj.getRootTask().listChildren()), 2)
+        a = prj.getTask('.a')
+        self.assertEqual(len(a.listChildren()), 2)
+        d = prj.getTask('.d')
+        self.assertEqual(len(d.listChildren()), 2)
+
 
 if __name__ == '__main__':
     unittest.main()

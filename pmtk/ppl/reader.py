@@ -108,13 +108,14 @@ class Reader:
         if indent > self.indent_level:
             if not self.context:
                 raise SyntaxError("Unexpected indent")
-        elif indent == self.indent_level:
-            self._popContext()
-        else:
+        elif indent < self.indent_level:
             if indent not in self.indent_level_stack:
                 raise SyntaxError("Unexpected unindent level")
-            while self.indent_level >= indent:
+            while self.indent_level > indent:  # pop until we're even
                 self._popContext()
+            self._popContext()  # and then pop one more to get to parent
+        else:
+            self._popContext()
 
     def _breakCommand(self, cmd_parts):
         """Break the command into command, arguments and extras."""
